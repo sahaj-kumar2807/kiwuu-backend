@@ -430,6 +430,52 @@ const updatePushToken = async (req, res) => {
     }
 };
 
+const updateNickname = async (req, res) => {
+    try {
+        const { nickname } = req.body;
+
+        const user = await User.findById(req.userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        if (!user.connectedUser) {
+            return res.status(400).json({
+                success: false,
+                message: "You are not connected to anyone"
+            });
+        }
+
+        if (!user.nicknames) {
+            user.nicknames = new Map();
+        }
+
+        const partnerIdStr = user.connectedUser.toString();
+        if (nickname && nickname.trim()) {
+            user.nicknames.set(partnerIdStr, nickname.trim());
+        } else {
+            user.nicknames.delete(partnerIdStr);
+        }
+
+        user.markModified("nicknames");
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Nickname updated successfully",
+            nickname: nickname ? nickname.trim() : ""
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
 module.exports = {
     createUser,
     getUsers,
@@ -439,5 +485,6 @@ module.exports = {
     rejectConnectionRequest,
     getConnectionRequests,
     disconnectUser,
-    updatePushToken
+    updatePushToken,
+    updateNickname
 };

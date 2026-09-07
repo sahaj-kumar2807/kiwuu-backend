@@ -1,6 +1,7 @@
 const Message = require("../models/Message");
 const User = require("../models/User");
 const { getIO } = require("../utils/socket");
+const { sendPushNotification } = require("../utils/pushService");
 
 
 // SEND MESSAGE
@@ -58,6 +59,27 @@ const sendMessage = async (req, res) => {
         const io = getIO();
 
         io.to(receiverId.toString()).emit("newMessage", message);
+
+        // 📲 Send FCM push notification if receiver has pushToken
+        if (receiver.pushToken) {
+            let senderDisplayName = sender.name;
+            if (receiver.nicknames) {
+                const custom = receiver.nicknames.get ? receiver.nicknames.get(req.userId.toString()) : receiver.nicknames[req.userId.toString()];
+                if (custom && custom.trim()) {
+                    senderDisplayName = custom.trim();
+                }
+            }
+
+            await sendPushNotification(
+                receiver.pushToken,
+                senderDisplayName,
+                text,
+                {
+                    screen: "chat",
+                    senderId: req.userId.toString()
+                }
+            );
+        }
 
         // Send response back to sender
         res.status(201).json({

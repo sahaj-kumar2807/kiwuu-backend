@@ -34,6 +34,13 @@ const userSchema = new mongoose.Schema(
         pushToken: {
             type: String,
             default: null
+        },
+
+        // Private per-user map: { [partnerId]: nicknameString }
+        nicknames: {
+            type: Map,
+            of: String,
+            default: {}
         }
     },
     {

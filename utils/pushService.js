@@ -20,7 +20,7 @@ const sendPushNotification = async (pushToken, title, body, data = {}) => {
     const message = {
         to: pushToken,
         sound: "default",
-        title: title || "🥝 Kiwuu",
+        title: title || "Kiwuu",
         body: body,
         data: {
             screen: "chat",
@@ -36,6 +36,11 @@ const sendPushNotification = async (pushToken, title, body, data = {}) => {
         for (const chunk of chunks) {
             const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
             console.log("📲 Expo push notification sent:", ticketChunk);
+            for (const ticket of ticketChunk) {
+                if (ticket.status === "error") {
+                    console.error(`❌ Push ticket error: ${ticket.message} (${ticket.details?.error})`);
+                }
+            }
         }
     } catch (error) {
         console.error("❌ Error sending Expo push notification:", error);

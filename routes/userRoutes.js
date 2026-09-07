@@ -13,10 +13,12 @@ const {
     rejectConnectionRequest,
     getConnectionRequests,
     disconnectUser,
-    updatePushToken
+    updatePushToken,
+    updateNickname
 } = require("../controllers/userController");
 
 router.post("/push-token", auth, updatePushToken);
+router.put("/nickname", auth, updateNickname);
 
 
 router.post("/register", createUser);
@@ -52,9 +54,26 @@ router.get("/me", auth, async (req, res) => {
             .populate("connectedUser", "-password")
             .populate("connectionRequests", "-password");
 
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        const userObj = user.toObject();
+        if (userObj.connectedUser) {
+            const partnerIdStr = userObj.connectedUser._id.toString();
+            let nickname = "";
+            if (user.nicknames) {
+                nickname = user.nicknames.get ? user.nicknames.get(partnerIdStr) : user.nicknames[partnerIdStr];
+            }
+            userObj.connectedUser.nickname = nickname || "";
+        }
+
         res.status(200).json({
             success: true,
-            user
+            user: userObj
         });
 
     } catch (error) {

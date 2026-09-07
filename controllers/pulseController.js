@@ -1,4 +1,5 @@
 const Pulse = require("../models/Pulse");
+const Message = require("../models/Message");
 const User = require("../models/User");
 const { getIO } = require("../utils/socket");
 const { awardPulseXP } = require("./catController");
@@ -23,12 +24,25 @@ const sendPulse = async (req, res) => {
             });
         }
 
+        const rawText = (req.body?.messageText && typeof req.body.messageText === "string") ? req.body.messageText.trim() : "";
+        const pulseText = rawText || "__pulse__";
+
+        // 1. Create Pulse record in MongoDB
         const pulse = await Pulse.create({
             sender: req.userId,
-            receiver: user.connectedUser
+            receiver: user.connectedUser,
+            text: rawText || null
         });
 
-        // 1. Real-time Socket.IO foreground notification
+        // 2. Also record pulse as a Message in chat so it persists across restarts
+        const pulseMessage = await Message.create({
+            sender: req.userId,
+            receiver: user.connectedUser,
+            text: pulseText,
+            isPulse: true
+        });
+
+        // 3. Real-time Socket.IO foreground notification
         const io = getIO();
         io.to(user.connectedUser.toString()).emit("pulse_received", {
             pulseId: pulse._id,
@@ -37,19 +51,30 @@ const sendPulse = async (req, res) => {
             createdAt: pulse.createdAt
         });
 
-        // 2. Award Cat XP & sync cat via Socket.IO
+        // Emit newMessage to receiver so it shows in chat stream immediately
+        io.to(user.connectedUser.toString()).emit("newMessage", pulseMessage);
+
+        // 4. Award Cat XP & sync cat via Socket.IO
         await awardPulseXP(req.userId, user.connectedUser);
 
-        // 3. Real phone background/lock-screen push notification via Expo
+        // 5. Immediate push notification to phone background/lockscreen via Expo/FCM
         const receiver = await User.findById(user.connectedUser);
         if (receiver && receiver.pushToken) {
-            const notifBody = req.body?.messageText
-                ? `${user.name}: "${req.body.messageText}" ❤️`
-                : `${user.name} misses you ❤️`;
+            let senderDisplayName = user.name;
+            if (receiver.nicknames) {
+                const custom = receiver.nicknames.get ? receiver.nicknames.get(req.userId.toString()) : receiver.nicknames[req.userId.toString()];
+                if (custom && custom.trim()) {
+                    senderDisplayName = custom.trim();
+                }
+            }
 
-            sendPushNotification(
+            const notifBody = rawText
+                ? `${senderDisplayName}: ${rawText} 💗`
+                : `${senderDisplayName} sent you a pulse 💗`;
+
+            await sendPushNotification(
                 receiver.pushToken,
-                "🥝 Kiwuu",
+                "Kiwuu",
                 notifBody,
                 {
                     screen: "chat",
@@ -62,7 +87,8 @@ const sendPulse = async (req, res) => {
         res.status(201).json({
             success: true,
             message: "Pulse sent ❤️",
-            pulse
+            pulse,
+            chatMessage: pulseMessage
         });
 
     } catch (error) {

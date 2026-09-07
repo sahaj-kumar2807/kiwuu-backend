@@ -18,6 +18,12 @@ const messageSchema = new mongoose.Schema(
             type: String,
             required: true,
             trim: true
+        },
+
+        // True when this message was created by a pulse action
+        isPulse: {
+            type: Boolean,
+            default: false
         }
     },
     {
