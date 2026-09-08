@@ -62,11 +62,19 @@ router.get("/me", auth, async (req, res) => {
         }
 
         const userObj = user.toObject();
+        if (user.nicknames instanceof Map) {
+            userObj.nicknames = Object.fromEntries(user.nicknames);
+        } else if (!userObj.nicknames) {
+            userObj.nicknames = {};
+        }
+
         if (userObj.connectedUser) {
             const partnerIdStr = userObj.connectedUser._id.toString();
             let nickname = "";
             if (user.nicknames) {
-                nickname = user.nicknames.get ? user.nicknames.get(partnerIdStr) : user.nicknames[partnerIdStr];
+                nickname = typeof user.nicknames.get === "function"
+                    ? user.nicknames.get(partnerIdStr)
+                    : user.nicknames[partnerIdStr];
             }
             userObj.connectedUser.nickname = nickname || "";
         }

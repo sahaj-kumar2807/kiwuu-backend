@@ -449,24 +449,22 @@ const updateNickname = async (req, res) => {
             });
         }
 
-        if (!user.nicknames) {
-            user.nicknames = new Map();
-        }
-
         const partnerIdStr = user.connectedUser.toString();
-        if (nickname && nickname.trim()) {
-            user.nicknames.set(partnerIdStr, nickname.trim());
-        } else {
-            user.nicknames.delete(partnerIdStr);
-        }
+        const trimmed = (nickname && typeof nickname === "string") ? nickname.trim() : "";
 
-        user.markModified("nicknames");
-        await user.save();
+        const updateObj = {};
+        if (trimmed) {
+            updateObj[`nicknames.${partnerIdStr}`] = trimmed;
+            await User.findByIdAndUpdate(req.userId, { $set: updateObj });
+        } else {
+            updateObj[`nicknames.${partnerIdStr}`] = 1;
+            await User.findByIdAndUpdate(req.userId, { $unset: updateObj });
+        }
 
         res.status(200).json({
             success: true,
             message: "Nickname updated successfully",
-            nickname: nickname ? nickname.trim() : ""
+            nickname: trimmed
         });
     } catch (error) {
         res.status(500).json({

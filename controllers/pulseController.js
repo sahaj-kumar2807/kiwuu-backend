@@ -62,7 +62,9 @@ const sendPulse = async (req, res) => {
         if (receiver && receiver.pushToken) {
             let senderDisplayName = user.name;
             if (receiver.nicknames) {
-                const custom = receiver.nicknames.get ? receiver.nicknames.get(req.userId.toString()) : receiver.nicknames[req.userId.toString()];
+                const custom = typeof receiver.nicknames.get === "function"
+                    ? receiver.nicknames.get(req.userId.toString())
+                    : receiver.nicknames[req.userId.toString()];
                 if (custom && custom.trim()) {
                     senderDisplayName = custom.trim();
                 }

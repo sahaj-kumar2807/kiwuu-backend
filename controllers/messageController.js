@@ -64,7 +64,9 @@ const sendMessage = async (req, res) => {
         if (receiver.pushToken) {
             let senderDisplayName = sender.name;
             if (receiver.nicknames) {
-                const custom = receiver.nicknames.get ? receiver.nicknames.get(req.userId.toString()) : receiver.nicknames[req.userId.toString()];
+                const custom = typeof receiver.nicknames.get === "function"
+                    ? receiver.nicknames.get(req.userId.toString())
+                    : receiver.nicknames[req.userId.toString()];
                 if (custom && custom.trim()) {
                     senderDisplayName = custom.trim();
                 }
