@@ -40,8 +40,7 @@ const sendPushNotification = async (fcmToken, title, body, data = {}) => {
                 priority: "max",
                 defaultVibrateTimings: true,
                 defaultSound: true,
-                icon: "ic_notification",
-                color: "#E04B60",
+                color: "#7A1F2E",
             },
         },
         // iOS (APNs) configuration for future iOS support

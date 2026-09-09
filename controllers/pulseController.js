@@ -70,20 +70,28 @@ const sendPulse = async (req, res) => {
                 }
             }
 
+            const notifTitle = `${senderDisplayName} 💓`;
             const notifBody = rawText
-                ? `${senderDisplayName}: ${rawText} 💗`
-                : `${senderDisplayName} sent you a pulse 💗`;
+                ? `${rawText} 💗`
+                : `Sent you a heartbeat pulse 💗`;
 
-            await sendPushNotification(
-                receiver.pushToken,
-                "Kiwuu",
-                notifBody,
-                {
-                    screen: "chat",
-                    senderId: req.userId.toString(),
-                    pulseId: pulse._id.toString()
-                }
-            );
+            try {
+                console.log(`📲 Sending pulse push notification from ${senderDisplayName} to ${receiver._id}...`);
+                await sendPushNotification(
+                    receiver.pushToken,
+                    notifTitle,
+                    notifBody,
+                    {
+                        screen: "chat",
+                        senderId: req.userId.toString(),
+                        pulseId: pulse._id.toString()
+                    }
+                );
+            } catch (pushErr) {
+                console.error("❌ Pulse push notification failed:", pushErr?.message || pushErr);
+            }
+        } else {
+            console.log(`ℹ️ Receiver ${user.connectedUser} does not have a registered pushToken`);
         }
 
         res.status(201).json({

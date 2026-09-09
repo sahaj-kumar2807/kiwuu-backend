@@ -72,15 +72,22 @@ const sendMessage = async (req, res) => {
                 }
             }
 
-            await sendPushNotification(
-                receiver.pushToken,
-                senderDisplayName,
-                text,
-                {
-                    screen: "chat",
-                    senderId: req.userId.toString()
-                }
-            );
+            try {
+                console.log(`📲 Sending message push notification from ${senderDisplayName} to ${receiver._id}...`);
+                await sendPushNotification(
+                    receiver.pushToken,
+                    senderDisplayName,
+                    text,
+                    {
+                        screen: "chat",
+                        senderId: req.userId.toString()
+                    }
+                );
+            } catch (pushErr) {
+                console.error("❌ Message push notification failed:", pushErr?.message || pushErr);
+            }
+        } else {
+            console.log(`ℹ️ Receiver ${receiver._id} does not have a registered pushToken`);
         }
 
         // Send response back to sender
